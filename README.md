@@ -1,4 +1,6 @@
-#Nested list D&D example
+#  Nested box DnD example
+
+Powerful :star2: React DnD example !
 
 To run it in your computer:
 
@@ -7,4 +9,6 @@ npm i
 npm start
 ```
 
-[Demo](http://tamagokun.github.io/example-react-dnd-nested/)
+#  Online Demo
+
+[Demo](https://ayqy.github.io/dnd/demo/react-dnd/index.html)

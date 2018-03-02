@@ -1,78 +1,89 @@
-import React, { Component, PropTypes } from 'react'
-import { DragSource, DropTarget } from 'react-dnd'
-import Tree from './Tree'
+import React, { Component, PropTypes } from 'react';
+import { DragSource, DropTarget } from 'react-dnd';
 
-const source = {
-  beginDrag(props) {
-    return {
-      id: props.id,
-      parent: props.parent,
-      items: props.item.children
-    }
-  },
 
-  isDragging(props, monitor) {
-    return props.id == monitor.getItem().id
-  }
-}
-
-const target = {
-  canDrop() {
-    return false
-  },
-
-  hover(props, monitor) {
-    const {id: draggedId} = monitor.getItem()
-    const {id: overId} = props
-
-    if (draggedId == overId || draggedId == props.parent) return
-    if (!monitor.isOver({shallow: true})) return
-
-    props.move(draggedId, overId, props.parent)
-  }
-}
-
-@DropTarget('ITEM', target, connect => ({
-  connectDropTarget: connect.dropTarget()
-}))
-@DragSource('ITEM', source, (connect, monitor) => ({
-  connectDragSource: connect.dragSource(),
-  connectDragPreview: connect.dragPreview(),
-  isDragging: monitor.isDragging()
-}))
-export default class Item extends Component {
+class _Item extends Component {
   static propTypes = {
-    id     : PropTypes.any.isRequired,
-    parent : PropTypes.any,
-    item   : PropTypes.object,
-    move   : PropTypes.func,
-    find   : PropTypes.func
+    id: PropTypes.any.isRequired,
+    type: PropTypes.string.isRequired,
+    move: PropTypes.func,
+    find: PropTypes.func
   };
 
   render() {
     const {
-      connectDropTarget, connectDragPreview, connectDragSource,
-      item: {id, title, children}, parent, move, find
-    } = this.props
+      connectDropTarget,
+      connectDragPreview,
+      connectDragSource,
+      id,
+      type,
+      move,
+      find,
+      isDragging
+    } = this.props;
 
-    return connectDropTarget(connectDragPreview(
-      <div>
-        {connectDragSource(
-          <div style={{
-            background: 'white',
-            border: '1px solid #ccc',
-            padding: '1em',
-            marginBottom: -1
-          }}
-          >{title}</div>
-        )}
-        <Tree
-          parent={id}
-          items={children}
-          move={move}
-          find={find}
-        />
-      </div>
-    ))
+    return connectDragPreview(
+        connectDropTarget(
+            connectDragSource(
+              <div
+                style={{
+                  flexGrow: 1,
+                  height: 100,
+                  background: 'skyblue',
+                  border: '1px solid #fff'
+                }}
+              >
+                {find(id).content}
+              </div>
+            )
+        )
+    );
   }
 }
+
+const source = {
+  beginDrag(props) {
+    return {
+      id: props.id
+    };
+  },
+
+  isDragging(props, monitor) {
+    return props.id == monitor.getItem().id;
+  }
+};
+
+const target = {
+  canDrop(props, monitor) {
+    const { id: draggedId } = monitor.getItem();
+    const { id: dropId, contains } = props;
+
+    if (draggedId === dropId) return false;
+    if (!monitor.isOver({ shallow: true })) return false;
+
+    // prevent dropping ancestor into child and dropping direct child into it's parent
+    if (contains(draggedId, dropId) || contains(dropId, draggedId, true)) return false;
+
+    return true;
+  },
+
+  drop(props, monitor, component) {
+    const { id: draggedId } = monitor.getItem();
+    const { id: dropId, contains } = props;
+
+    props.move(draggedId, dropId);
+  }
+};
+
+const TYPE = 'ITEM';
+const Item = DropTarget(TYPE, target, connect => ({
+  connectDropTarget: connect.dropTarget()
+}))(
+  DragSource(TYPE, source, (connect, monitor) => ({
+    connectDragSource: connect.dragSource(),
+    connectDragPreview: connect.dragPreview(),
+    isDragging: monitor.isDragging()
+  }))(_Item)
+);
+
+export default Item;
